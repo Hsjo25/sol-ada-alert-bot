@@ -4,7 +4,7 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE'
+BOT_TOKEN = '7691730618:AAEI4pRNuVj4ImwALThbxg0PTfIIhVqfK40'
 CHAT_ID = '@SufianOdeh'
 API_URL = f'https://api.telegram.org/bot{BOT_TOKEN}/'
 
