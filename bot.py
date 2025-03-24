@@ -5,7 +5,6 @@ from flask import Flask, request
 app = Flask(__name__)
 
 BOT_TOKEN = '7691730618:AAEI4pRNuVj4ImwALThbxg0PTfIIhVqfK40'
-CHAT_ID = '@SufianOdeh'
 API_URL = f'https://api.telegram.org/bot{BOT_TOKEN}/'
 
 TARGETS = {
@@ -35,9 +34,9 @@ def get_price(symbol):
     except:
         return None
 
-def send_message(text):
+def send_message(chat_id, text):
     url = API_URL + 'sendMessage'
-    payload = {'chat_id': CHAT_ID, 'text': text}
+    payload = {'chat_id': chat_id, 'text': text}
     requests.post(url, data=payload)
 
 def monitor_prices():
@@ -51,15 +50,15 @@ def monitor_prices():
             s = status[symbol]
 
             if not s['buy_alerted'] and price <= levels['buy']:
-                send_message(f'🔵 {symbol} وصلت لنقطة الشراء: {price}$')
+                send_message(CHAT_ID, f'🔵 {symbol} وصلت لنقطة الشراء: {price}$')
                 s['buy_alerted'] = True
 
             if not s['tp_alerted'] and price >= levels['take_profit']:
-                send_message(f'💰 {symbol} وصلت لهدف الربح: {price}$')
+                send_message(CHAT_ID, f'💰 {symbol} وصلت لهدف الربح: {price}$')
                 s['tp_alerted'] = True
 
             if not s['sl_alerted'] and price <= levels['stop_loss']:
-                send_message(f'⛔️ {symbol} ضربت وقف الخسارة: {price}$')
+                send_message(CHAT_ID, f'⛔️ {symbol} ضربت وقف الخسارة: {price}$')
                 s['sl_alerted'] = True
 
         time.sleep(30)
@@ -78,11 +77,11 @@ def telegram_webhook():
             levels = TARGETS[symbol]
             reply += f"{symbol} السعر الحالي: {current}$\n"
             reply += f"- دخول: {levels['buy']}$\n- هدف: {levels['take_profit']}$\n- وقف خسارة: {levels['stop_loss']}$\n\n"
-        send_message(reply)
+        send_message(chat_id, reply)
     elif text.lower() == '/start':
-        send_message("👋 تم تفعيل التنبيهات لـ SOL و ADA، اكتب /status لأي تحديثات")
+        send_message(chat_id, "👋 تم تفعيل التنبيهات لـ SOL و ADA، اكتب /status لأي تحديثات")
     else:
-        send_message("❓ أمر غير معروف. جرب /status أو /start")
+        send_message(chat_id, "❓ أمر غير معروف. جرب /status أو /start")
 
     return {'ok': True}
 
