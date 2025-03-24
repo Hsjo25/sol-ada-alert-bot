@@ -1,7 +1,7 @@
 import requests
 import time
 import threading
-from flask import Flask, request
+from flask import Flask, request, jsonify, render_template_string
 from datetime import datetime
 
 app = Flask(__name__)
@@ -9,13 +9,6 @@ app = Flask(__name__)
 BOT_TOKEN = '7691730618:AAEI4pRNuVj4ImwALThbxg0PTfIIhVqfK40'
 API_URL = f'https://api.telegram.org/bot{BOT_TOKEN}/'
 CHAT_ID = '@SufianOdeh'
-
-FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeR9EhJY4dsR7Tm0fxOFMnBxezD_tfZ6ZbH8If0TQi21_n4jQ/formResponse'
-ENTRY_IDS = {
-    'coin': 'entry.1018775588',
-    'price': 'entry.1760498622',
-    'status': 'entry.1573861553'
-}
 
 TARGETS = {
     'SOL': {
@@ -31,8 +24,8 @@ TARGETS = {
 }
 
 status = {
-    'SOL': {'buy_alerted': False, 'tp_alerted': False, 'sl_alerted': False},
-    'ADA': {'buy_alerted': False, 'tp_alerted': False, 'sl_alerted': False}
+    'SOL': {'buy_alerted': False, 'tp_alerted': False, 'sl_alerted': False, 'price': None},
+    'ADA': {'buy_alerted': False, 'tp_alerted': False, 'sl_alerted': False, 'price': None}
 }
 
 hourly_active = True
@@ -48,7 +41,9 @@ def get_price(symbol):
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            return float(data[coin_id]['usd'])
+            price = float(data[coin_id]['usd'])
+            status[symbol]['price'] = price
+            return price
         else:
             print(f"[ERROR] CoinGecko API status: {response.status_code}")
             return None
@@ -66,14 +61,6 @@ def send_alert(text):
     payload = {'chat_id': CHAT_ID, 'text': text}
     requests.post(url, data=payload)
 
-def submit_to_form(symbol, price, alert_type):
-    data = {
-        ENTRY_IDS['coin']: symbol,
-        ENTRY_IDS['price']: price,
-        ENTRY_IDS['status']: alert_type
-    }
-    requests.post(FORM_URL, data=data)
-
 def monitor_prices():
     while True:
         for symbol in TARGETS:
@@ -86,17 +73,14 @@ def monitor_prices():
 
             if not s['buy_alerted'] and price <= levels['buy']:
                 send_alert(f'🔵 {symbol} وصلت لنقطة الشراء: {price}$')
-                submit_to_form(symbol, price, 'شراء')
                 s['buy_alerted'] = True
 
             if not s['tp_alerted'] and price >= levels['take_profit']:
                 send_alert(f'💰 {symbol} وصلت لهدف الربح: {price}$')
-                submit_to_form(symbol, price, 'هدف')
                 s['tp_alerted'] = True
 
             if not s['sl_alerted'] and price <= levels['stop_loss']:
                 send_alert(f'⛔️ {symbol} ضربت وقف الخسارة: {price}$')
-                submit_to_form(symbol, price, 'خسارة')
                 s['sl_alerted'] = True
 
         time.sleep(30)
@@ -131,7 +115,6 @@ def telegram_webhook():
             levels = TARGETS[symbol]
             reply += f"{symbol} السعر الحالي: {current}$\n"
             reply += f"- دخول: {levels['buy']}$\n- هدف: {levels['take_profit']}$\n- وقف خسارة: {levels['stop_loss']}$\n\n"
-            submit_to_form(symbol, current, 'STATUS')
         send_message(chat_id, reply)
     elif text.lower() == '/start':
         send_message(chat_id, "👋 تم تفعيل التنبيهات لـ SOL و ADA، اكتب /status لأي تحديثات")
@@ -145,6 +128,30 @@ def telegram_webhook():
         send_message(chat_id, "❓ أمر غير معروف. جرب /status أو /start أو /hourly_on أو /hourly_off")
 
     return {'ok': True}
+
+@app.route('/')
+def dashboard():
+    html = """
+    <html>
+    <head><title>Crypto Dashboard</title></head>
+    <body style="font-family: Arial; background: #f2f2f2; padding: 20px;">
+    <h2>📊 Crypto Dashboard</h2>
+    <table border="1" cellpadding="10" style="background: white;">
+        <tr><th>العملة</th><th>السعر الحالي</th><th>دخول</th><th>هدف</th><th>ستوب</th></tr>
+        {% for symbol, data in targets.items() %}
+        <tr>
+            <td>{{ symbol }}</td>
+            <td>{{ status[symbol]['price'] or 'جارٍ التحديث' }}</td>
+            <td>{{ data['buy'] }}</td>
+            <td>{{ data['take_profit'] }}</td>
+            <td>{{ data['stop_loss'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </body>
+    </html>
+    """
+    return render_template_string(html, targets=TARGETS, status=status)
 
 if __name__ == '__main__':
     threading.Thread(target=monitor_prices).start()
