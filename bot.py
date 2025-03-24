@@ -28,10 +28,11 @@ status = {
 def get_price(symbol):
     try:
         url = f'https://api.binance.com/api/v3/ticker/price?symbol={symbol}USDT'
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         data = response.json()
         return float(data['price'])
-    except:
+    except Exception as e:
+        print(f"Error getting price for {symbol}: {e}")
         return None
 
 def send_message(chat_id, text):
