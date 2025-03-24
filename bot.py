@@ -10,11 +10,11 @@ BOT_TOKEN = '7691730618:AAEI4pRNuVj4ImwALThbxg0PTfIIhVqfK40'
 API_URL = f'https://api.telegram.org/bot{BOT_TOKEN}/'
 CHAT_ID = '@SufianOdeh'
 
-FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfF1TIpFc8ih6QyZfbQ5rFVoQOMLtQogPlmrRDL8quPUnX2iQ/formResponse'
+FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeR9EhJY4dsR7Tm0fxOFMnBxezD_tfZ6ZbH8If0TQi21_n4jQ/formResponse'
 ENTRY_IDS = {
-    'coin': 'entry.1509386362',
-    'type': 'entry.1332060171',
-    'price': 'entry.1397094650'
+    'coin': 'entry.1018775588',
+    'price': 'entry.1760498622',
+    'status': 'entry.1573861553'
 }
 
 TARGETS = {
@@ -69,8 +69,8 @@ def send_alert(text):
 def submit_to_form(symbol, price, alert_type):
     data = {
         ENTRY_IDS['coin']: symbol,
-        ENTRY_IDS['type']: alert_type,
-        ENTRY_IDS['price']: price
+        ENTRY_IDS['price']: price,
+        ENTRY_IDS['status']: alert_type
     }
     requests.post(FORM_URL, data=data)
 
