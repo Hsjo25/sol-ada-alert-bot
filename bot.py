@@ -27,15 +27,19 @@ status = {
 
 def get_price(symbol):
     try:
-        symbol_pair = f"{symbol}USDT"
-        url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol_pair}"
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()  # Raise exception if status not 200
-        data = response.json()
-        return float(data['price'])
+        url = f'https://api.binance.com/api/v3/ticker/price?symbol={symbol}USDT'
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            return float(data['price'])
+        else:
+            print(f"[ERROR] Binance API response {response.status_code}")
+            return None
     except Exception as e:
-        print(f"[ERROR] Failed to get price for {symbol}: {e}")
+        print(f"[ERROR] Exception in get_price for {symbol}: {e}")
         return None
+
 
 def send_message(chat_id, text):
     url = API_URL + 'sendMessage'
