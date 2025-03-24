@@ -10,6 +10,13 @@ BOT_TOKEN = '7691730618:AAEI4pRNuVj4ImwALThbxg0PTfIIhVqfK40'
 API_URL = f'https://api.telegram.org/bot{BOT_TOKEN}/'
 CHAT_ID = '@SufianOdeh'
 
+FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfF1TIpFc8ih6QyZfbQ5rFVoQOMLtQogPlmrRDL8quPUnX2iQ/formResponse'
+ENTRY_IDS = {
+    'coin': 'entry.1509386362',
+    'type': 'entry.1332060171',
+    'price': 'entry.1397094650'
+}
+
 TARGETS = {
     'SOL': {
         'buy': 134.0,
@@ -59,6 +66,14 @@ def send_alert(text):
     payload = {'chat_id': CHAT_ID, 'text': text}
     requests.post(url, data=payload)
 
+def submit_to_form(symbol, price, alert_type):
+    data = {
+        ENTRY_IDS['coin']: symbol,
+        ENTRY_IDS['type']: alert_type,
+        ENTRY_IDS['price']: price
+    }
+    requests.post(FORM_URL, data=data)
+
 def monitor_prices():
     while True:
         for symbol in TARGETS:
@@ -71,14 +86,17 @@ def monitor_prices():
 
             if not s['buy_alerted'] and price <= levels['buy']:
                 send_alert(f'🔵 {symbol} وصلت لنقطة الشراء: {price}$')
+                submit_to_form(symbol, price, 'شراء')
                 s['buy_alerted'] = True
 
             if not s['tp_alerted'] and price >= levels['take_profit']:
                 send_alert(f'💰 {symbol} وصلت لهدف الربح: {price}$')
+                submit_to_form(symbol, price, 'هدف')
                 s['tp_alerted'] = True
 
             if not s['sl_alerted'] and price <= levels['stop_loss']:
                 send_alert(f'⛔️ {symbol} ضربت وقف الخسارة: {price}$')
+                submit_to_form(symbol, price, 'خسارة')
                 s['sl_alerted'] = True
 
         time.sleep(30)
@@ -113,6 +131,7 @@ def telegram_webhook():
             levels = TARGETS[symbol]
             reply += f"{symbol} السعر الحالي: {current}$\n"
             reply += f"- دخول: {levels['buy']}$\n- هدف: {levels['take_profit']}$\n- وقف خسارة: {levels['stop_loss']}$\n\n"
+            submit_to_form(symbol, current, 'STATUS')
         send_message(chat_id, reply)
     elif text.lower() == '/start':
         send_message(chat_id, "👋 تم تفعيل التنبيهات لـ SOL و ADA، اكتب /status لأي تحديثات")
