@@ -27,18 +27,23 @@ status = {
 
 def get_price(symbol):
     try:
-        url = f'https://api.binance.com/api/v3/ticker/price?symbol={symbol}USDT'
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, timeout=10)
+        symbol_map = {
+            'SOL': 'solana',
+            'ADA': 'cardano'
+        }
+        coin_id = symbol_map.get(symbol.upper())
+        url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            return float(data['price'])
+            return float(data[coin_id]['usd'])
         else:
-            print(f"[ERROR] Binance API response {response.status_code}")
+            print(f"[ERROR] CoinGecko API status: {response.status_code}")
             return None
     except Exception as e:
-        print(f"[ERROR] Exception in get_price for {symbol}: {e}")
+        print(f"[ERROR] CoinGecko Exception: {e}")
         return None
+
 
 
 def send_message(chat_id, text):
